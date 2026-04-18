@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#101828" />
+    <meta name="description" content="Planilla individual de jugador de baloncesto en formato PWA." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Planilla Individual de Básquet</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">PWA · Planilla individual</p>
+          <h1>Planilla de básquet</h1>
+        </div>
+        <button id="toggle-history" class="ghost-btn">Partidos guardados</button>
+      </header>
+
+      <section id="history-panel" class="panel hidden">
+        <div class="panel-header">
+          <h2>Planillas anteriores</h2>
+          <button id="close-history" class="ghost-btn small">Cerrar</button>
+        </div>
+        <div id="history-list" class="history-list empty-state">
+          Todavía no hay planillas guardadas.
+        </div>
+      </section>
+
+      <main>
+        <section class="card">
+          <div class="card-header">
+            <h2>Cabecera</h2>
+            <span id="install-status" class="status-chip hidden">Instalable</span>
+          </div>
+          <div class="grid two">
+            <label>
+              <span>Jugador</span>
+              <input id="playerName" type="text" placeholder="Ej: Juan Pérez" maxlength="60" />
+            </label>
+            <label>
+              <span>Categoría</span>
+              <input id="category" type="text" placeholder="Ej: U17 / Primera" maxlength="40" />
+            </label>
+            <label>
+              <span>Fecha</span>
+              <input id="gameDate" type="date" />
+            </label>
+            <label>
+              <span>Rival</span>
+              <input id="opponent" type="text" placeholder="Ej: Club Atenas" maxlength="60" />
+            </label>
+          </div>
+          <div class="actions-row">
+            <button id="save-sheet" class="primary-btn">Guardar planilla</button>
+            <button id="new-sheet" class="danger-btn">Reiniciar / nueva planilla</button>
+            <button id="share-sheet" class="secondary-btn">Compartir como imagen</button>
+            <button id="install-app" class="ghost-btn hidden">Instalar app</button>
+          </div>
+          <p id="save-feedback" class="feedback"></p>
+        </section>
+
+        <section class="card summary-card">
+          <div class="card-header">
+            <h2>Resumen actual</h2>
+            <span class="summary-points"><strong id="totalPoints">0</strong> PTS</span>
+          </div>
+          <div class="summary-grid">
+            <div class="summary-stat"><span>REB</span><strong id="summaryRebounds">0</strong></div>
+            <div class="summary-stat"><span>AST</span><strong id="summaryAssists">0</strong></div>
+            <div class="summary-stat"><span>PGNF</span><strong id="summarySecondaryAssists">0</strong></div>
+            <div class="summary-stat"><span>ROB</span><strong id="summarySteals">0</strong></div>
+            <div class="summary-stat"><span>TAP</span><strong id="summaryBlocks">0</strong></div>
+            <div class="summary-stat"><span>FR</span><strong id="summaryFoulsReceived">0</strong></div>
+            <div class="summary-stat"><span>FC</span><strong id="summaryFoulsCommitted">0</strong></div>
+            <div class="summary-stat"><span>FG%</span><strong id="summaryFgPct">0%</strong></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2>Tiros</h2>
+            <span class="helper-text">Cargá anotados y fallados. El sistema calcula intentos, puntos y porcentajes.</span>
+          </div>
+          <div class="shots-table">
+            <div class="shots-head row">
+              <span>Tipo</span>
+              <span>Fallados</span>
+              <span>Anotados</span>
+              <span>INT</span>
+              <span>ANO</span>
+              <span>%</span>
+              <span>PTS</span>
+            </div>
+            <div class="row shot-row" data-shot-row="ft">
+              <span class="shot-label">Libres</span>
+              <div class="counter-group">
+                <button data-counter-type="shot" data-shot="ft" data-field="missed" data-delta="-1">−</button>
+                <strong id="ft-missed">0</strong>
+                <button data-counter-type="shot" data-shot="ft" data-field="missed" data-delta="1">+</button>
+              </div>
+              <div class="counter-group">
+                <button data-counter-type="shot" data-shot="ft" data-field="made" data-delta="-1">−</button>
+                <strong id="ft-made">0</strong>
+                <button data-counter-type="shot" data-shot="ft" data-field="made" data-delta="1">+</button>
+              </div>
+              <strong id="ft-attempts">0</strong>
+              <strong id="ft-made-display">0</strong>
+              <strong id="ft-pct">0%</strong>
+              <strong id="ft-points">0</strong>
+            </div>
+            <div class="row shot-row" data-shot-row="two">
+              <span class="shot-label">Dobles</span>
+              <div class="counter-group">
+                <button data-counter-type="shot" data-shot="two" data-field="missed" data-delta="-1">−</button>
+                <strong id="two-missed">0</strong>
+                <button data-counter-type="shot" data-shot="two" data-field="missed" data-delta="1">+</button>
+              </div>
+              <div class="counter-group">
+                <button data-counter-type="shot" data-shot="two" data-field="made" data-delta="-1">−</button>
+                <strong id="two-made">0</strong>
+                <button data-counter-type="shot" data-shot="two" data-field="made" data-delta="1">+</button>
+              </div>
+              <strong id="two-attempts">0</strong>
+              <strong id="two-made-display">0</strong>
+              <strong id="two-pct">0%</strong>
+              <strong id="two-points">0</strong>
+            </div>
+            <div class="row shot-row" data-shot-row="three">
+              <span class="shot-label">Triples</span>
+              <div class="counter-group">
+                <button data-counter-type="shot" data-shot="three" data-field="missed" data-delta="-1">−</button>
+                <strong id="three-missed">0</strong>
+                <button data-counter-type="shot" data-shot="three" data-field="missed" data-delta="1">+</button>
+              </div>
+              <div class="counter-group">
+                <button data-counter-type="shot" data-shot="three" data-field="made" data-delta="-1">−</button>
+                <strong id="three-made">0</strong>
+                <button data-counter-type="shot" data-shot="three" data-field="made" data-delta="1">+</button>
+              </div>
+              <strong id="three-attempts">0</strong>
+              <strong id="three-made-display">0</strong>
+              <strong id="three-pct">0%</strong>
+              <strong id="three-points">0</strong>
+            </div>
+            <div class="row shot-row total-row">
+              <span class="shot-label">Total cancha</span>
+              <span>—</span>
+              <span>—</span>
+              <strong id="fg-attempts">0</strong>
+              <strong id="fg-made">0</strong>
+              <strong id="fg-pct">0%</strong>
+              <strong id="fg-points">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2>Otras estadísticas</h2>
+          </div>
+          <div class="stats-grid" id="stats-grid">
+            <div class="stat-box">
+              <span>Rebotes</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="rebounds" data-delta="-1">−</button>
+                <strong id="rebounds">0</strong>
+                <button data-counter-type="stat" data-stat="rebounds" data-delta="1">+</button>
+              </div>
+            </div>
+            <div class="stat-box">
+              <span>Asistencias</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="assists" data-delta="-1">−</button>
+                <strong id="assists">0</strong>
+                <button data-counter-type="stat" data-stat="assists" data-delta="1">+</button>
+              </div>
+            </div>
+            <div class="stat-box">
+              <span>Pases de gol no finalizados</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="secondaryAssists" data-delta="-1">−</button>
+                <strong id="secondaryAssists">0</strong>
+                <button data-counter-type="stat" data-stat="secondaryAssists" data-delta="1">+</button>
+              </div>
+            </div>
+            <div class="stat-box">
+              <span>Robos</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="steals" data-delta="-1">−</button>
+                <strong id="steals">0</strong>
+                <button data-counter-type="stat" data-stat="steals" data-delta="1">+</button>
+              </div>
+            </div>
+            <div class="stat-box">
+              <span>Tapas</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="blocks" data-delta="-1">−</button>
+                <strong id="blocks">0</strong>
+                <button data-counter-type="stat" data-stat="blocks" data-delta="1">+</button>
+              </div>
+            </div>
+            <div class="stat-box">
+              <span>Faltas recibidas</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="foulsReceived" data-delta="-1">−</button>
+                <strong id="foulsReceived">0</strong>
+                <button data-counter-type="stat" data-stat="foulsReceived" data-delta="1">+</button>
+              </div>
+            </div>
+            <div class="stat-box">
+              <span>Faltas cometidas</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="foulsCommitted" data-delta="-1">−</button>
+                <strong id="foulsCommitted">0</strong>
+                <button data-counter-type="stat" data-stat="foulsCommitted" data-delta="1">+</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2>Promedios del jugador</h2>
+            <span id="averages-meta" class="helper-text">Se calculan con planillas guardadas del mismo jugador.</span>
+          </div>
+          <div id="averages-content" class="averages-grid empty-state">
+            Ingresá o cargá un jugador para ver sus promedios históricos.
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
