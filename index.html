@@ -54,6 +54,28 @@
               <input id="opponent" type="text" placeholder="Ej: Club Atenas" maxlength="60" />
             </label>
           </div>
+
+          <div class="result-box">
+            <div class="result-box-header">
+              <h3>Resultado del partido</h3>
+              <span id="resultBadge" class="result-badge neutral">Sin cargar</span>
+            </div>
+            <div class="grid result-grid">
+              <label>
+                <span>Tanteador propio</span>
+                <input id="teamScore" type="number" min="0" inputmode="numeric" placeholder="Ej: 72" />
+              </label>
+              <label>
+                <span>Tanteador rival</span>
+                <input id="opponentScore" type="number" min="0" inputmode="numeric" placeholder="Ej: 65" />
+              </label>
+              <div class="score-preview-wrap">
+                <span class="score-preview-label">Boxscore</span>
+                <strong id="scorePreview" class="score-preview">—</strong>
+              </div>
+            </div>
+          </div>
+
           <div class="actions-row">
             <button id="save-sheet" class="primary-btn">Guardar planilla</button>
             <button id="new-sheet" class="danger-btn">Reiniciar / nueva planilla</button>
@@ -66,14 +88,20 @@
         <section class="card summary-card">
           <div class="card-header">
             <h2>Resumen actual</h2>
-            <span class="summary-points"><strong id="totalPoints">0</strong> PTS</span>
+            <div class="summary-top-right">
+              <span id="summaryResultBadge" class="result-badge neutral small">Sin resultado</span>
+              <span class="summary-points"><strong id="totalPoints">0</strong> PTS</span>
+            </div>
           </div>
           <div class="summary-grid">
             <div class="summary-stat"><span>REB</span><strong id="summaryRebounds">0</strong></div>
             <div class="summary-stat"><span>AST</span><strong id="summaryAssists">0</strong></div>
             <div class="summary-stat"><span>PGNF</span><strong id="summarySecondaryAssists">0</strong></div>
             <div class="summary-stat"><span>ROB</span><strong id="summarySteals">0</strong></div>
+            <div class="summary-stat"><span>REC</span><strong id="summaryRecoveries">0</strong></div>
             <div class="summary-stat"><span>TAP</span><strong id="summaryBlocks">0</strong></div>
+            <div class="summary-stat"><span>PER</span><strong id="summaryTurnovers">0</strong></div>
+            <div class="summary-stat"><span>CAM</span><strong id="summaryTravels">0</strong></div>
             <div class="summary-stat"><span>FR</span><strong id="summaryFoulsReceived">0</strong></div>
             <div class="summary-stat"><span>FC</span><strong id="summaryFoulsCommitted">0</strong></div>
             <div class="summary-stat"><span>FG%</span><strong id="summaryFgPct">0%</strong></div>
@@ -95,65 +123,81 @@
               <span>%</span>
               <span>PTS</span>
             </div>
+
             <div class="row shot-row" data-shot-row="ft">
               <span class="shot-label">Libres</span>
-              <div class="counter-group">
-                <button data-counter-type="shot" data-shot="ft" data-field="missed" data-delta="-1">−</button>
-                <strong id="ft-missed">0</strong>
-                <button data-counter-type="shot" data-shot="ft" data-field="missed" data-delta="1">+</button>
+              <div class="shot-metric shot-counter" data-mobile-label="Fallados">
+                <div class="counter-group">
+                  <button data-counter-type="shot" data-shot="ft" data-field="missed" data-delta="-1">−</button>
+                  <strong id="ft-missed">0</strong>
+                  <button data-counter-type="shot" data-shot="ft" data-field="missed" data-delta="1">+</button>
+                </div>
               </div>
-              <div class="counter-group">
-                <button data-counter-type="shot" data-shot="ft" data-field="made" data-delta="-1">−</button>
-                <strong id="ft-made">0</strong>
-                <button data-counter-type="shot" data-shot="ft" data-field="made" data-delta="1">+</button>
+              <div class="shot-metric shot-counter" data-mobile-label="Anotados">
+                <div class="counter-group">
+                  <button data-counter-type="shot" data-shot="ft" data-field="made" data-delta="-1">−</button>
+                  <strong id="ft-made">0</strong>
+                  <button data-counter-type="shot" data-shot="ft" data-field="made" data-delta="1">+</button>
+                </div>
               </div>
-              <strong id="ft-attempts">0</strong>
-              <strong id="ft-made-display">0</strong>
-              <strong id="ft-pct">0%</strong>
-              <strong id="ft-points">0</strong>
+              <div class="shot-metric" data-mobile-label="INT"><strong id="ft-attempts">0</strong></div>
+              <div class="shot-metric" data-mobile-label="ANO"><strong id="ft-made-display">0</strong></div>
+              <div class="shot-metric" data-mobile-label="%"><strong id="ft-pct">0%</strong></div>
+              <div class="shot-metric" data-mobile-label="PTS"><strong id="ft-points">0</strong></div>
             </div>
+
             <div class="row shot-row" data-shot-row="two">
               <span class="shot-label">Dobles</span>
-              <div class="counter-group">
-                <button data-counter-type="shot" data-shot="two" data-field="missed" data-delta="-1">−</button>
-                <strong id="two-missed">0</strong>
-                <button data-counter-type="shot" data-shot="two" data-field="missed" data-delta="1">+</button>
+              <div class="shot-metric shot-counter" data-mobile-label="Fallados">
+                <div class="counter-group">
+                  <button data-counter-type="shot" data-shot="two" data-field="missed" data-delta="-1">−</button>
+                  <strong id="two-missed">0</strong>
+                  <button data-counter-type="shot" data-shot="two" data-field="missed" data-delta="1">+</button>
+                </div>
               </div>
-              <div class="counter-group">
-                <button data-counter-type="shot" data-shot="two" data-field="made" data-delta="-1">−</button>
-                <strong id="two-made">0</strong>
-                <button data-counter-type="shot" data-shot="two" data-field="made" data-delta="1">+</button>
+              <div class="shot-metric shot-counter" data-mobile-label="Anotados">
+                <div class="counter-group">
+                  <button data-counter-type="shot" data-shot="two" data-field="made" data-delta="-1">−</button>
+                  <strong id="two-made">0</strong>
+                  <button data-counter-type="shot" data-shot="two" data-field="made" data-delta="1">+</button>
+                </div>
               </div>
-              <strong id="two-attempts">0</strong>
-              <strong id="two-made-display">0</strong>
-              <strong id="two-pct">0%</strong>
-              <strong id="two-points">0</strong>
+              <div class="shot-metric" data-mobile-label="INT"><strong id="two-attempts">0</strong></div>
+              <div class="shot-metric" data-mobile-label="ANO"><strong id="two-made-display">0</strong></div>
+              <div class="shot-metric" data-mobile-label="%"><strong id="two-pct">0%</strong></div>
+              <div class="shot-metric" data-mobile-label="PTS"><strong id="two-points">0</strong></div>
             </div>
+
             <div class="row shot-row" data-shot-row="three">
               <span class="shot-label">Triples</span>
-              <div class="counter-group">
-                <button data-counter-type="shot" data-shot="three" data-field="missed" data-delta="-1">−</button>
-                <strong id="three-missed">0</strong>
-                <button data-counter-type="shot" data-shot="three" data-field="missed" data-delta="1">+</button>
+              <div class="shot-metric shot-counter" data-mobile-label="Fallados">
+                <div class="counter-group">
+                  <button data-counter-type="shot" data-shot="three" data-field="missed" data-delta="-1">−</button>
+                  <strong id="three-missed">0</strong>
+                  <button data-counter-type="shot" data-shot="three" data-field="missed" data-delta="1">+</button>
+                </div>
               </div>
-              <div class="counter-group">
-                <button data-counter-type="shot" data-shot="three" data-field="made" data-delta="-1">−</button>
-                <strong id="three-made">0</strong>
-                <button data-counter-type="shot" data-shot="three" data-field="made" data-delta="1">+</button>
+              <div class="shot-metric shot-counter" data-mobile-label="Anotados">
+                <div class="counter-group">
+                  <button data-counter-type="shot" data-shot="three" data-field="made" data-delta="-1">−</button>
+                  <strong id="three-made">0</strong>
+                  <button data-counter-type="shot" data-shot="three" data-field="made" data-delta="1">+</button>
+                </div>
               </div>
-              <strong id="three-attempts">0</strong>
-              <strong id="three-made-display">0</strong>
-              <strong id="three-pct">0%</strong>
-              <strong id="three-points">0</strong>
+              <div class="shot-metric" data-mobile-label="INT"><strong id="three-attempts">0</strong></div>
+              <div class="shot-metric" data-mobile-label="ANO"><strong id="three-made-display">0</strong></div>
+              <div class="shot-metric" data-mobile-label="%"><strong id="three-pct">0%</strong></div>
+              <div class="shot-metric" data-mobile-label="PTS"><strong id="three-points">0</strong></div>
             </div>
+
             <div class="row shot-row total-row">
               <span class="shot-label">Total cancha</span>
-              <span>—</span>
-              <span>—</span>
-              <strong id="fg-attempts">0</strong>
-              <strong id="fg-made">0</strong>
-              <strong id="fg-pct">0%</strong>
-              <strong id="fg-points">0</strong>
+              <div class="shot-metric" data-mobile-label="Fallados"><strong>—</strong></div>
+              <div class="shot-metric" data-mobile-label="Anotados"><strong>—</strong></div>
+              <div class="shot-metric" data-mobile-label="INT"><strong id="fg-attempts">0</strong></div>
+              <div class="shot-metric" data-mobile-label="ANO"><strong id="fg-made">0</strong></div>
+              <div class="shot-metric" data-mobile-label="%"><strong id="fg-pct">0%</strong></div>
+              <div class="shot-metric" data-mobile-label="PTS"><strong id="fg-points">0</strong></div>
             </div>
           </div>
         </section>
@@ -196,11 +240,35 @@
               </div>
             </div>
             <div class="stat-box">
+              <span>Recuperos</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="recoveries" data-delta="-1">−</button>
+                <strong id="recoveries">0</strong>
+                <button data-counter-type="stat" data-stat="recoveries" data-delta="1">+</button>
+              </div>
+            </div>
+            <div class="stat-box">
               <span>Tapas</span>
               <div class="counter-group big">
                 <button data-counter-type="stat" data-stat="blocks" data-delta="-1">−</button>
                 <strong id="blocks">0</strong>
                 <button data-counter-type="stat" data-stat="blocks" data-delta="1">+</button>
+              </div>
+            </div>
+            <div class="stat-box">
+              <span>Pérdidas de balón</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="turnovers" data-delta="-1">−</button>
+                <strong id="turnovers">0</strong>
+                <button data-counter-type="stat" data-stat="turnovers" data-delta="1">+</button>
+              </div>
+            </div>
+            <div class="stat-box">
+              <span>Caminatas</span>
+              <div class="counter-group big">
+                <button data-counter-type="stat" data-stat="travels" data-delta="-1">−</button>
+                <strong id="travels">0</strong>
+                <button data-counter-type="stat" data-stat="travels" data-delta="1">+</button>
               </div>
             </div>
             <div class="stat-box">

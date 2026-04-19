@@ -1,10 +1,22 @@
 const STORAGE_KEY = 'basketball_individual_sheets_v1';
-const APP_CACHE_VERSION = 'v1';
 
 const shotConfig = {
   ft: { label: 'TL', value: 1 },
   two: { label: '2P', value: 2 },
   three: { label: '3P', value: 3 },
+};
+
+const statLabels = {
+  rebounds: 'REB',
+  assists: 'AST',
+  secondaryAssists: 'PGNF',
+  steals: 'ROB',
+  recoveries: 'REC',
+  blocks: 'TAP',
+  turnovers: 'PER',
+  travels: 'CAM',
+  foulsReceived: 'FR',
+  foulsCommitted: 'FC',
 };
 
 let deferredInstallPrompt = null;
@@ -15,6 +27,11 @@ const dom = {
   category: document.getElementById('category'),
   gameDate: document.getElementById('gameDate'),
   opponent: document.getElementById('opponent'),
+  teamScore: document.getElementById('teamScore'),
+  opponentScore: document.getElementById('opponentScore'),
+  resultBadge: document.getElementById('resultBadge'),
+  summaryResultBadge: document.getElementById('summaryResultBadge'),
+  scorePreview: document.getElementById('scorePreview'),
   saveFeedback: document.getElementById('save-feedback'),
   toggleHistory: document.getElementById('toggle-history'),
   closeHistory: document.getElementById('close-history'),
@@ -32,7 +49,10 @@ const dom = {
   summaryAssists: document.getElementById('summaryAssists'),
   summarySecondaryAssists: document.getElementById('summarySecondaryAssists'),
   summarySteals: document.getElementById('summarySteals'),
+  summaryRecoveries: document.getElementById('summaryRecoveries'),
   summaryBlocks: document.getElementById('summaryBlocks'),
+  summaryTurnovers: document.getElementById('summaryTurnovers'),
+  summaryTravels: document.getElementById('summaryTravels'),
   summaryFoulsReceived: document.getElementById('summaryFoulsReceived'),
   summaryFoulsCommitted: document.getElementById('summaryFoulsCommitted'),
   summaryFgPct: document.getElementById('summaryFgPct'),
@@ -45,6 +65,10 @@ function createEmptySheet() {
     category: '',
     date: new Date().toISOString().slice(0, 10),
     opponent: '',
+    result: {
+      teamScore: '',
+      opponentScore: '',
+    },
     shots: {
       ft: { made: 0, missed: 0 },
       two: { made: 0, missed: 0 },
@@ -55,7 +79,10 @@ function createEmptySheet() {
       assists: 0,
       secondaryAssists: 0,
       steals: 0,
+      recoveries: 0,
       blocks: 0,
+      turnovers: 0,
+      travels: 0,
       foulsReceived: 0,
       foulsCommitted: 0,
     },
@@ -63,22 +90,119 @@ function createEmptySheet() {
   };
 }
 
+function normalizeSheet(sheet = {}) {
+  const base = createEmptySheet();
+  return {
+    ...base,
+    ...sheet,
+    id: sheet.id || base.id,
+    playerName: sheet.playerName || '',
+    category: sheet.category || '',
+    date: sheet.date || base.date,
+    opponent: sheet.opponent || '',
+    result: {
+      teamScore: normalizeScoreValue(sheet.result?.teamScore),
+      opponentScore: normalizeScoreValue(sheet.result?.opponentScore),
+    },
+    shots: {
+      ft: {
+        made: sanitizeCounter(sheet.shots?.ft?.made),
+        missed: sanitizeCounter(sheet.shots?.ft?.missed),
+      },
+      two: {
+        made: sanitizeCounter(sheet.shots?.two?.made),
+        missed: sanitizeCounter(sheet.shots?.two?.missed),
+      },
+      three: {
+        made: sanitizeCounter(sheet.shots?.three?.made),
+        missed: sanitizeCounter(sheet.shots?.three?.missed),
+      },
+    },
+    stats: {
+      rebounds: sanitizeCounter(sheet.stats?.rebounds),
+      assists: sanitizeCounter(sheet.stats?.assists),
+      secondaryAssists: sanitizeCounter(sheet.stats?.secondaryAssists),
+      steals: sanitizeCounter(sheet.stats?.steals),
+      recoveries: sanitizeCounter(sheet.stats?.recoveries),
+      blocks: sanitizeCounter(sheet.stats?.blocks),
+      turnovers: sanitizeCounter(sheet.stats?.turnovers),
+      travels: sanitizeCounter(sheet.stats?.travels),
+      foulsReceived: sanitizeCounter(sheet.stats?.foulsReceived),
+      foulsCommitted: sanitizeCounter(sheet.stats?.foulsCommitted),
+    },
+    updatedAt: Number(sheet.updatedAt) || Date.now(),
+  };
+}
+
 function getSavedSheets() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeSheet) : [];
   } catch {
     return [];
   }
 }
 
 function saveSheetsToStorage(sheets) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sheets));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sheets.map(normalizeSheet)));
 }
 
 function sanitizeCounter(value) {
   return Math.max(0, Number(value) || 0);
+}
+
+function normalizeScoreValue(value) {
+  if (value === '' || value === null || value === undefined) return '';
+  return String(Math.max(0, Number(value) || 0));
+}
+
+function getNumericScore(value) {
+  return value === '' ? null : Math.max(0, Number(value) || 0);
+}
+
+function getResultSummary(sheet = currentSheet) {
+  const teamScore = getNumericScore(sheet.result?.teamScore ?? '');
+  const opponentScore = getNumericScore(sheet.result?.opponentScore ?? '');
+
+  if (teamScore === null || opponentScore === null) {
+    return {
+      label: 'Sin cargar',
+      shortLabel: 'Sin resultado',
+      score: '—',
+      className: 'neutral',
+    };
+  }
+
+  if (teamScore > opponentScore) {
+    return {
+      label: 'Victoria',
+      shortLabel: 'Victoria',
+      score: `${teamScore} - ${opponentScore}`,
+      className: 'win',
+    };
+  }
+
+  if (teamScore < opponentScore) {
+    return {
+      label: 'Derrota',
+      shortLabel: 'Derrota',
+      score: `${teamScore} - ${opponentScore}`,
+      className: 'loss',
+    };
+  }
+
+  return {
+    label: 'Empate',
+    shortLabel: 'Empate',
+    score: `${teamScore} - ${opponentScore}`,
+    className: 'draw',
+  };
+}
+
+function setBadgeState(element, summary) {
+  element.textContent = summary.label;
+  element.className = `result-badge ${summary.className}${element.classList.contains('small') ? ' small' : ''}`.trim();
 }
 
 function getShotAttempts(shotKey) {
@@ -129,6 +253,18 @@ function bindHeaderInputs() {
     currentSheet.opponent = event.target.value;
     currentSheet.updatedAt = Date.now();
   });
+
+  dom.teamScore.addEventListener('input', (event) => {
+    currentSheet.result.teamScore = normalizeScoreValue(event.target.value);
+    currentSheet.updatedAt = Date.now();
+    renderResult();
+  });
+
+  dom.opponentScore.addEventListener('input', (event) => {
+    currentSheet.result.opponentScore = normalizeScoreValue(event.target.value);
+    currentSheet.updatedAt = Date.now();
+    renderResult();
+  });
 }
 
 function bindCounterEvents() {
@@ -155,11 +291,27 @@ function bindCounterEvents() {
   });
 }
 
+function renderResult() {
+  dom.teamScore.value = currentSheet.result.teamScore;
+  dom.opponentScore.value = currentSheet.result.opponentScore;
+
+  const summary = getResultSummary();
+  dom.scorePreview.textContent = summary.score;
+  setBadgeState(dom.resultBadge, summary);
+  setBadgeState(dom.summaryResultBadge, {
+    ...summary,
+    label: summary.shortLabel,
+  });
+}
+
 function render() {
+  currentSheet = normalizeSheet(currentSheet);
+
   dom.playerName.value = currentSheet.playerName;
   dom.category.value = currentSheet.category;
   dom.gameDate.value = currentSheet.date;
   dom.opponent.value = currentSheet.opponent;
+  renderResult();
 
   for (const shotKey of Object.keys(shotConfig)) {
     const shot = currentSheet.shots[shotKey];
@@ -178,7 +330,8 @@ function render() {
   document.getElementById('fg-points').textContent = fg.points;
 
   Object.entries(currentSheet.stats).forEach(([key, value]) => {
-    document.getElementById(key).textContent = value;
+    const target = document.getElementById(key);
+    if (target) target.textContent = value;
   });
 
   dom.totalPoints.textContent = getTotalPoints();
@@ -186,7 +339,10 @@ function render() {
   dom.summaryAssists.textContent = currentSheet.stats.assists;
   dom.summarySecondaryAssists.textContent = currentSheet.stats.secondaryAssists;
   dom.summarySteals.textContent = currentSheet.stats.steals;
+  dom.summaryRecoveries.textContent = currentSheet.stats.recoveries;
   dom.summaryBlocks.textContent = currentSheet.stats.blocks;
+  dom.summaryTurnovers.textContent = currentSheet.stats.turnovers;
+  dom.summaryTravels.textContent = currentSheet.stats.travels;
   dom.summaryFoulsReceived.textContent = currentSheet.stats.foulsReceived;
   dom.summaryFoulsCommitted.textContent = currentSheet.stats.foulsCommitted;
   dom.summaryFgPct.textContent = `${fg.pct}%`;
@@ -207,7 +363,8 @@ function renderHistory() {
   dom.historyList.innerHTML = savedSheets
     .map((sheet) => {
       const title = `${escapeHtml(sheet.playerName || 'Sin nombre')} · ${escapeHtml(sheet.opponent || 'Sin rival')}`;
-      const meta = `${escapeHtml(sheet.category || 'Sin categoría')} · ${escapeHtml(sheet.date || 'Sin fecha')} · ${getPointsForSheet(sheet)} PTS`;
+      const resultSummary = getResultSummary(sheet);
+      const meta = `${escapeHtml(sheet.category || 'Sin categoría')} · ${escapeHtml(sheet.date || 'Sin fecha')} · ${getPointsForSheet(sheet)} PTS · ${escapeHtml(resultSummary.label)} ${escapeHtml(resultSummary.score)}`;
       return `
         <div class="history-item">
           <div>
@@ -245,13 +402,9 @@ function renderAverages() {
   const totals = samePlayerSheets.reduce(
     (acc, sheet) => {
       acc.points += getPointsForSheet(sheet);
-      acc.rebounds += safeValue(sheet.stats?.rebounds);
-      acc.assists += safeValue(sheet.stats?.assists);
-      acc.secondaryAssists += safeValue(sheet.stats?.secondaryAssists);
-      acc.steals += safeValue(sheet.stats?.steals);
-      acc.blocks += safeValue(sheet.stats?.blocks);
-      acc.foulsReceived += safeValue(sheet.stats?.foulsReceived);
-      acc.foulsCommitted += safeValue(sheet.stats?.foulsCommitted);
+      Object.keys(statLabels).forEach((key) => {
+        acc[key] += safeValue(sheet.stats?.[key]);
+      });
       acc.ftMade += safeValue(sheet.shots?.ft?.made);
       acc.ftAttempts += getSheetAttempts(sheet, 'ft');
       acc.twoMade += safeValue(sheet.shots?.two?.made);
@@ -266,7 +419,10 @@ function renderAverages() {
       assists: 0,
       secondaryAssists: 0,
       steals: 0,
+      recoveries: 0,
       blocks: 0,
+      turnovers: 0,
+      travels: 0,
       foulsReceived: 0,
       foulsCommitted: 0,
       ftMade: 0,
@@ -290,7 +446,10 @@ function renderAverages() {
     ['AST', avg(totals.assists, games)],
     ['PGNF', avg(totals.secondaryAssists, games)],
     ['ROB', avg(totals.steals, games)],
+    ['REC', avg(totals.recoveries, games)],
     ['TAP', avg(totals.blocks, games)],
+    ['PER', avg(totals.turnovers, games)],
+    ['CAM', avg(totals.travels, games)],
     ['FR', avg(totals.foulsReceived, games)],
     ['FC', avg(totals.foulsCommitted, games)],
     ['TL', `${avg(totals.ftMade, games)} / ${avg(totals.ftAttempts, games)}`],
@@ -321,7 +480,7 @@ function bindHistoryActions() {
     if (loadButton) {
       const sheet = getSavedSheets().find((item) => item.id === loadButton.dataset.loadSheet);
       if (!sheet) return;
-      currentSheet = structuredClone(sheet);
+      currentSheet = normalizeSheet(sheet);
       dom.saveFeedback.textContent = 'Planilla cargada desde el historial.';
       render();
       dom.historyPanel.classList.add('hidden');
@@ -349,9 +508,9 @@ function bindPrimaryActions() {
     currentSheet.updatedAt = Date.now();
 
     if (index >= 0) {
-      savedSheets[index] = structuredClone(currentSheet);
+      savedSheets[index] = normalizeSheet(currentSheet);
     } else {
-      savedSheets.push(structuredClone(currentSheet));
+      savedSheets.push(normalizeSheet(currentSheet));
     }
 
     saveSheetsToStorage(savedSheets);
@@ -360,7 +519,14 @@ function bindPrimaryActions() {
   });
 
   dom.newSheet.addEventListener('click', () => {
-    const hasData = currentSheet.playerName || currentSheet.opponent || getTotalPoints() || Object.values(currentSheet.stats).some(Boolean);
+    const hasResult = currentSheet.result.teamScore !== '' || currentSheet.result.opponentScore !== '';
+    const hasData =
+      currentSheet.playerName ||
+      currentSheet.opponent ||
+      getTotalPoints() ||
+      hasResult ||
+      Object.values(currentSheet.stats).some(Boolean);
+
     if (hasData) {
       const wantsSave = window.confirm('¿Querés guardar la planilla actual antes de reiniciar?');
       if (wantsSave) dom.saveSheet.click();
@@ -401,7 +567,7 @@ function bindPrimaryActions() {
 async function generateShareImage() {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
-  canvas.height = 1350;
+  canvas.height = 1600;
   const ctx = canvas.getContext('2d');
 
   ctx.fillStyle = '#0b1220';
@@ -411,7 +577,7 @@ async function generateShareImage() {
   gradient.addColorStop(0, '#162341');
   gradient.addColorStop(1, '#0b1220');
   ctx.fillStyle = gradient;
-  ctx.fillRect(40, 40, 1000, 1270);
+  ctx.fillRect(40, 40, 1000, 1520);
 
   ctx.fillStyle = '#f3f6fb';
   ctx.font = '700 54px Inter, Arial, sans-serif';
@@ -424,6 +590,10 @@ async function generateShareImage() {
   ctx.fillText(`Fecha: ${currentSheet.date || '—'}`, 80, 270);
   ctx.fillText(`Rival: ${currentSheet.opponent || '—'}`, 80, 315);
 
+  const resultSummary = getResultSummary();
+  ctx.fillStyle = '#d8e0ee';
+  ctx.fillText(`Resultado: ${resultSummary.score} · ${resultSummary.label}`, 80, 360);
+
   ctx.fillStyle = '#f97316';
   roundRect(ctx, 740, 120, 220, 110, 22, true);
   ctx.fillStyle = '#fff7ed';
@@ -432,33 +602,39 @@ async function generateShareImage() {
   ctx.font = '700 58px Inter, Arial, sans-serif';
   ctx.fillText(String(getTotalPoints()), 820, 220);
 
-  drawSectionTitle(ctx, 'Tiros', 80, 390);
-  drawRow(ctx, ['TL', `${currentSheet.shots.ft.made}/${getShotAttempts('ft')}`, `${getShotPct('ft')}%`, `${getShotPoints('ft')} pts`], 80, 440);
-  drawRow(ctx, ['2P', `${currentSheet.shots.two.made}/${getShotAttempts('two')}`, `${getShotPct('two')}%`, `${getShotPoints('two')} pts`], 80, 505);
-  drawRow(ctx, ['3P', `${currentSheet.shots.three.made}/${getShotAttempts('three')}`, `${getShotPct('three')}%`, `${getShotPoints('three')} pts`], 80, 570);
+  drawSectionTitle(ctx, 'Tiros', 80, 440);
+  drawRow(ctx, ['TL', `${currentSheet.shots.ft.made}/${getShotAttempts('ft')}`, `${getShotPct('ft')}%`, `${getShotPoints('ft')} pts`], 80, 490);
+  drawRow(ctx, ['2P', `${currentSheet.shots.two.made}/${getShotAttempts('two')}`, `${getShotPct('two')}%`, `${getShotPoints('two')} pts`], 80, 555);
+  drawRow(ctx, ['3P', `${currentSheet.shots.three.made}/${getShotAttempts('three')}`, `${getShotPct('three')}%`, `${getShotPoints('three')} pts`], 80, 620);
 
   const fg = getFgSummary();
-  drawRow(ctx, ['FG', `${fg.made}/${fg.attempts}`, `${fg.pct}%`, `${fg.points} pts`], 80, 635, true);
+  drawRow(ctx, ['FG', `${fg.made}/${fg.attempts}`, `${fg.pct}%`, `${fg.points} pts`], 80, 685, true);
 
-  drawSectionTitle(ctx, 'Otras estadísticas', 80, 760);
+  drawSectionTitle(ctx, 'Otras estadísticas', 80, 800);
   const statPairs = [
     ['Rebotes', currentSheet.stats.rebounds],
     ['Asistencias', currentSheet.stats.assists],
     ['Pases de gol no finalizados', currentSheet.stats.secondaryAssists],
     ['Robos', currentSheet.stats.steals],
+    ['Recuperos', currentSheet.stats.recoveries],
     ['Tapas', currentSheet.stats.blocks],
+    ['Pérdidas de balón', currentSheet.stats.turnovers],
+    ['Caminatas', currentSheet.stats.travels],
     ['Faltas recibidas', currentSheet.stats.foulsReceived],
     ['Faltas cometidas', currentSheet.stats.foulsCommitted],
   ];
 
-  let y = 810;
-  ctx.font = '600 30px Inter, Arial, sans-serif';
-  statPairs.forEach(([label, value]) => {
+  let y = 855;
+  ctx.font = '600 28px Inter, Arial, sans-serif';
+  statPairs.forEach(([label, value], index) => {
+    const column = index % 2;
+    const row = Math.floor(index / 2);
+    const baseX = column === 0 ? 90 : 570;
+    const baseY = y + row * 68;
     ctx.fillStyle = '#d8e0ee';
-    ctx.fillText(label, 90, y);
+    ctx.fillText(label, baseX, baseY);
     ctx.fillStyle = '#f3f6fb';
-    ctx.fillText(String(value), 930, y);
-    y += 62;
+    ctx.fillText(String(value), baseX + 340, baseY);
   });
 
   const samePlayerSheets = getSavedSheets().filter(
@@ -472,12 +648,12 @@ async function generateShareImage() {
       ? `Promedios disponibles en la app: ${samePlayerSheets.length} planilla${samePlayerSheets.length === 1 ? '' : 's'} guardada${samePlayerSheets.length === 1 ? '' : 's'}`
       : 'Todavía no hay historial guardado para este jugador.',
     80,
-    1230
+    1490
   );
 
   ctx.fillStyle = '#64748b';
   ctx.font = '22px Inter, Arial, sans-serif';
-  ctx.fillText('Creado con la PWA de planilla individual', 80, 1275);
+  ctx.fillText('Creado con la PWA de planilla individual', 80, 1532);
 
   return await new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
