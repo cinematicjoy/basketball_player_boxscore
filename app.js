@@ -745,8 +745,36 @@ function downloadBlob(blob, filename) {
 
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('./sw.js').catch((error) => {
-    console.error('SW registration failed', error);
+
+  let refreshing = false;
+
+  navigator.serviceWorker
+    .register('./sw.js?v=3')
+    .then((registration) => {
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+
+      registration.addEventListener('updatefound', () => {
+        const installingWorker = registration.installing;
+        if (!installingWorker) return;
+        installingWorker.addEventListener('statechange', () => {
+          if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+
+      registration.update().catch(() => {});
+    })
+    .catch((error) => {
+      console.error('SW registration failed', error);
+    });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
   });
 }
 
