@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reset PWA Cache</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#0b1220; color:#fff; margin:0; padding:24px; }
+    .card { max-width:640px; margin:40px auto; background:#101828; border:1px solid #334155; border-radius:16px; padding:24px; }
+    button { background:#2563eb; color:#fff; border:none; padding:12px 16px; border-radius:10px; font-weight:700; cursor:pointer; }
+    code { background:#111827; padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Reset de caché de la PWA</h1>
+    <p>Esta página elimina <strong>Service Workers</strong> y <strong>cachés</strong> del sitio actual.</p>
+    <button id="resetBtn">Limpiar ahora</button>
+    <pre id="log"></pre>
+  </div>
+
+  <script>
+    async function resetPwa() {
+      const log = document.getElementById('log');
+      const write = (msg) => log.textContent += msg + '\n';
+      write('Iniciando limpieza...');
+
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of regs) {
+          await reg.unregister();
+          write('SW eliminado: ' + (reg.scope || 'sin scope'));
+        }
+      } else {
+        write('Este navegador no soporta Service Worker.');
+      }
+
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        for (const key of keys) {
+          await caches.delete(key);
+          write('Cache eliminado: ' + key);
+        }
+      }
+
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        write('localStorage y sessionStorage limpiados.');
+      } catch (e) {
+        write('No se pudo limpiar storage: ' + e.message);
+      }
+
+      write('Listo. Cerrá esta pestaña y volvé a abrir la app normal.');
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', resetPwa);
+    resetPwa();
+  </script>
+</body>
+</html>
